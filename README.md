@@ -19,3 +19,5 @@ R scripts should be run in the following order:
   10. Array.Satellite Overlap.R
   11. Figures.R
 
+
+doi: 10.5281/zenodo.6863943
