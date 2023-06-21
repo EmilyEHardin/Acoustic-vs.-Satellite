@@ -1,5 +1,5 @@
-#### INDIVIDUAL dBBMMs ####
-# Previous Script: Continuous Time SSM
+#### INDIVIDUAL dBBMMs_ODs ####
+# Previous Script: Continuous Time SSM_ODs
 
 # dBBMMs will be applied to each individual with the {move package} in order to get utilization distributions for the full extent of both the acoustic and satellite data, as well as the matching temporal duration for both acoustic and satellite data
 
@@ -34,6 +34,8 @@ sat_sub <- sat_sub %>%
 # Acoustic Data 
 COAall_loc <- read.csv("COAall_loc.err.csv", header = TRUE)
 COAall_loc$timestamp<-as.POSIXct(COAall_loc$TimeStep.coa, format = "%m/%d/%Y %H:%M:%S", tz = "America/New_York")
+COAall_loc$Location.Err <- COAall_loc$Err
+COAall_loc$Location.Err[COAall_loc$Location.Err == 0] <- 0.01 # distances/location errors were calculate as whole numbers including 0, but the dBBMM cannot take a location error argument of 0; therefore replace any 0s with 0.01 m
 COAall_loc <- COAall_loc %>%
   mutate(Tag.ID = make.names(Tag.ID)) %>%
   dplyr::select(Tag.ID, timestamp, Latitude.coa, Longitude.coa, Location.Err)
@@ -41,6 +43,8 @@ COAall_loc <- COAall_loc %>%
 # Acoustic Subset
 COAall_sub_loc <- read.csv("COAall_sub_loc.err.csv", header = TRUE)
 COAall_sub_loc$timestamp<-as.POSIXct(COAall_sub_loc$TimeStep.coa, format = "%m/%d/%Y %H:%M:%S", tz = "America/New_York")
+COAall_sub_loc$Location.Err <- COAall_sub_loc$Err
+COAall_sub_loc$Location.Err[COAall_sub_loc$Location.Err == 0] <- 0.01 # distances/location errors were calculate as whole numbers including 0, but the dBBMM cannot take a location error argument of 0; therefore replace any 0s with 0.01 m
 COAall_sub_loc <- COAall_sub_loc %>%
   mutate(Tag.ID = make.names(Tag.ID)) %>%
   dplyr::select(Tag.ID, timestamp, Latitude.coa, Longitude.coa, Location.Err)
@@ -282,10 +286,10 @@ extent(Cs)
 extent(Ca)
 extent(Cas)
 raster.C <- raster(
-  xmn = -8848948, 
-  xmx = -8803260, 
-  ymn = 2921266, 
-  ymx = 2963801, 
+  xmn = -8849049, 
+  xmx = -8803241, 
+  ymn = 2921181, 
+  ymx = 2963890, 
   crs = CRS("+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"),
   resolution = 50)
 
@@ -355,7 +359,7 @@ raster.D <- raster(
   xmn = -8848433, 
   xmx = -8799326, 
   ymn = 2923510, 
-  ymx = 2969144, 
+  ymx = 2968736, 
   crs = CRS("+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"),
   resolution = 50)
 
@@ -423,7 +427,7 @@ extent(Es)
 extent(Ess)
 raster.E <- raster(
   xmn = -8915977, #added 40,000 instead of 20,000
-  xmx = -8753983, 
+  xmx = -8754342, 
   ymn = 2884244, 
   ymx = 3011888, 
   crs = CRS("+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"),
@@ -465,10 +469,10 @@ save(x=dBB.Ess, file="Ess")
 
 extent(Fa)
 raster.F <- raster(
-  xmn = -8845745, 
-  xmx = -8803237, 
-  ymn = 2921496, 
-  ymx = 2962924, 
+  xmn = -8845756, 
+  xmx = -8803505, 
+  ymn = 2921610, 
+  ymx = 2962917, 
   crs = CRS("+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"),
   resolution = 50)
 
@@ -498,7 +502,7 @@ extent(Gss)
 extent(Ga)
 raster.G <- raster(
   xmn = -8848608, 
-  xmx = -8798927, 
+  xmx = -8799084, 
   ymn = 2918522, 
   ymx = 2965853, 
   crs = CRS("+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"),
@@ -555,7 +559,7 @@ extent(Hs)
 extent(Hss)
 raster.H <- raster(
   xmn = -8849174, 
-  xmx = -8801643, 
+  xmx = -8801631, 
   ymn = 2921337, 
   ymx = 2972214, 
   crs = CRS("+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"),
@@ -599,9 +603,9 @@ extent(Iss)
 extent(Ia)
 raster.I <- raster(
   xmn = -8849621, 
-  xmx = -8795207, 
-  ymn = 2893294, 
-  ymx = 2972769, 
+  xmx = -8795164, 
+  ymn = 2893299, 
+  ymx = 2972771, 
   crs = CRS("+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"),
   resolution = 50)
 
@@ -651,6 +655,6 @@ save(x=dBB.Is, file="Is")
 save(x=dBB.Iss, file="Iss")
 
 
-# Next Script: Utilization Distributions 
+# Next Script: Occurrence Distributions 
 
 
