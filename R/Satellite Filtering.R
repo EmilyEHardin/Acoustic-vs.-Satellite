@@ -71,6 +71,7 @@ sat_I <- sat_I[!duplicated(sat_I$date), ]
 
 
 sat_all <- rbind(sat_A, sat_B, sat_C, sat_D, sat_E, sat_G, sat_H, sat_I) # Combine all turtle satellite filtered data 
+sat_all2 <- rbind(sat_raw_A, sat_raw_B, sat_raw_C, sat_raw_D, sat_raw_E, sat_raw_G, sat_raw_H, sat_raw_I) #originally, 6595 total raw transmissions
 
 sat_all <- sat_all %>% # Select desired columns 
   dplyr::select(id, date, lc, lat, long, smaj, smin, eor)
@@ -139,7 +140,7 @@ sat_all_sub <- sat_all_sub %>%
   dplyr::select(id, date, lc, lat, long, smaj, smin, eor)
 # remove May time gap, LC Z, and NAs
 sat_all_sub <- sat_all_sub %>%
-  filter(date <= "2017-05-04 08:21:00" | date >= "2017-05-06 17:37:00") %>% # filter out transmissions that occured when acoustic receivers were offline at beginning of May so that this dataframe has the same temporal duration as acoustic data
+  filter(date <= "2017-05-04 08:21:00" | date >= "2017-05-06 17:37:00") %>% # filter out transmissions that occurred when acoustic receivers were offline at beginning of May so that this dataframe has the same temporal duration as acoustic data
   filter(lc != "Z")
 sat_all_sub <- sat_all_sub[!is.na(sat_all_sub$lat),]
 sat_all_sub <- sat_all_sub[!is.na(sat_all_sub$long),]
@@ -151,8 +152,23 @@ sat_all_sub$eor <- as.numeric(sat_all_sub$eor)
 
 write.csv(sat_all_sub, "sat_all_sub.csv")
 
+# Visualize #
+ggplot(data = Study_Area) +
+  geom_sf(fill = "grey", col = "grey") +
+  geom_point(data = sat_all, aes(lon, lat, color = id), alpha = 0.5) +
+  theme_bw() +
+  theme(text = element_text(size = 15)) +
+  theme(axis.text.y = element_text(angle = 90, hjust = 0.5)) +
+  theme(axis.ticks.y = element_line(size = 0.5)) +
+  theme(axis.ticks.x = element_line(size = 0.5)) +
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) + 
+  facet_wrap(~ id) + 
+  coord_sf(xlim = c(-79.5, -79), ylim = c(25.5, 26)) # points for some turtles are out of frame 
 
-# Next Script: Continuous Time SSM
+# Next Script: Continuous Time SSM_ODs
 
 
 
