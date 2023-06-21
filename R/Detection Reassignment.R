@@ -10,6 +10,9 @@ library(sf)
 library(tidyverse)
 library(ggplot2)
 
+## LOAD BIMINI SHAPEFILE ##
+
+Study_Area <- st_read(dsn = "bimini shapefile/bimini_shape.shp", quiet = TRUE) # shapefile of study area
 
 ## IMPORT RANGE TEST DATA ##
 
@@ -64,7 +67,8 @@ summary(mod.bank)
 # plot to visualize 
 new.bank.dat<- data.frame(dist = seq(0, 750))
 new.bank.dat$preds<- plogis(predict(mod.bank, newdata = new.bank.dat))
-plot(bank.dat$dist, bank.dat$n / 173)
+plot(bank.dat$dist, bank.dat$n / 173, main = "Bank Detection Probability",
+     xlab = "Distance from receiver (m)", ylab = "Proportion of detections (per day)")
 lines(preds ~ dist, data = new.bank.dat)
 
 # Reef Habitat 
@@ -80,14 +84,17 @@ summary(mod.reef)
 # plot to visualize
 new.reef.dat<- data.frame(dist = seq(0, 750))
 new.reef.dat$preds<- plogis(predict(mod.reef, newdata = new.reef.dat))
-plot(reef.dat$dist, reef.dat$n / 173)
+plot(reef.dat$dist, reef.dat$n / 173, main = "Reef Detection Probability",
+     xlab = "Distance from receiver (m)", ylab = "Proportion of detections (per day)")
 lines(preds ~ dist, data = new.reef.dat)
 
 
 ## CREATE FUNCTION TO RANDOMLY DISTRIBUTE DETECTIONS ## 
 
 ## Sandy Bank Habitat 
-r.bank<- function(nobs, xcoord, ycoord) {
+r.bank<- function(data, coords, land_shp) {
+  nobs <- nrow(data)  # number of points to randomly generate
+  
   x1<- 0:750  # define input vector (of distance from receiver) to calc probabilities
   # calculate probabilities over distance based on logistic regression results
   probs<- exp(2.124770354 - 0.006058997*x1) / (1 + exp(2.124770354 - 0.006058997*x1))
@@ -96,15 +103,46 @@ r.bank<- function(nobs, xcoord, ycoord) {
   # generate random direction
   angle<- runif(n = nobs, min = 0, max = 360)
   # calculate new coordinates; relies on {geosphere} package
-  new.coords<- geosphere::destPoint(p = cbind(xcoord, ycoord),
+  new.coords<- geosphere::destPoint(p = data[,coords],
                                     b = angle,
                                     d = dist) %>%
-    data.frame()
-  return(new.coords)
+    data.frame() %>%
+    mutate(dist_m = dist)
+  
+  # determine whether any random points overlap land; if so, move back to water
+  overlap_ind <- st_intersects(st_as_sf(new.coords, coords = c('lon','lat'), crs = 4326), land_shp) %>%
+    as.numeric()
+  ind <- which(!is.na(overlap_ind))
+  
+  
+  while (length(ind) > 0) {
+    dist1<- sample(x = x1, size = length(ind), replace = TRUE, prob = probs)
+    angle1<- runif(n = length(ind), min = 0, max = 360)
+    land.coords<- geosphere::destPoint(p = data[ind,coords],
+                                       b = angle1,
+                                       d = dist1) %>%
+      data.frame() %>%
+      mutate(dist_m = dist1)
+    
+    new.coords[ind,] <- land.coords  #add newly generated points
+    
+    # re-evaluate whether any points still overlap land
+    overlap_ind <- st_intersects(st_as_sf(new.coords, coords = c('lon','lat'), crs = 4326), land_shp) %>%
+      as.numeric()
+    ind <- which(!is.na(overlap_ind))
+  }
+  
+  # Merge random locs w/ original dataset
+  names(new.coords)[1:2] <- c('lon1','lat1')
+  data <- cbind(data, new.coords)
+  
+  return(data)
 }
 
 ## Reef Habitat
-r.reef<- function(nobs, xcoord, ycoord) {
+r.reef<- function(data, coords, land_shp) {
+  nobs <- nrow(data)  # number of points to randomly generate
+  
   x1<- 0:750  # define input vector (of distance from receiver) to calc probabilities
   # calculate probabilities over distance based on logistic regression results
   probs<- exp(2.47823255 - 0.01352845*x1) / (1 + exp(2.47823255 - 0.01352845*x1))
@@ -113,17 +151,45 @@ r.reef<- function(nobs, xcoord, ycoord) {
   # generate random direction
   angle<- runif(n = nobs, min = 0, max = 360)
   # calculate new coordinates; relies on {geosphere} package
-  new.coords<- geosphere::destPoint(p = cbind(xcoord, ycoord),
+  new.coords<- geosphere::destPoint(p = data[,coords],
                                     b = angle,
                                     d = dist) %>%
-    data.frame()
-  return(new.coords)
+    data.frame() %>%
+    mutate(dist_m = dist)
+  
+  # determine whether any random points overlap land; if so, move back to water
+  overlap_ind <- st_intersects(st_as_sf(new.coords, coords = c('lon','lat'), crs = 4326), land_shp) %>%
+    as.numeric()
+  ind <- which(!is.na(overlap_ind))
+  
+  
+  while (length(ind) > 0) {
+    dist1<- sample(x = x1, size = length(ind), replace = TRUE, prob = probs)
+    angle1<- runif(n = length(ind), min = 0, max = 360)
+    land.coords<- geosphere::destPoint(p = data[ind,coords],
+                                       b = angle1,
+                                       d = dist1) %>%
+      data.frame() %>%
+      mutate(dist_m = dist1)
+    
+    new.coords[ind,] <- land.coords  #add newly generated points
+    
+    # re-evaluate whether any points still overlap land
+    overlap_ind <- st_intersects(st_as_sf(new.coords, coords = c('lon','lat'), crs = 4326), land_shp) %>%
+      as.numeric()
+    ind <- which(!is.na(overlap_ind))
+  }
+  
+  # Merge random locs w/ original dataset
+  names(new.coords)[1:2] <- c('lon1','lat1')
+  data <- cbind(data, new.coords)
+  
+  return(data)
 }
-
 
 ## APPLY FUNCTIONS TO ACOUSTIC DETECTION DATA ##
 
-# Any points that are placed over land to be re-run. Any that are still placed over land will be reassigned to the receiver location
+filtdet9 <- as.data.frame(filtdet9) # convert from sf object to dataframe
 
 bank.det <- filtdet9 %>%
   filter(habitat == "bank") # create dataframe of detections on sandy bank receivers 
@@ -131,211 +197,117 @@ reef.det <- filtdet9 %>%
   filter(habitat == "reef") # create dataframe of detections on reef receivers 
 
 # run functions created above to reassign detection locations 
-new.reef.det <- r.reef(nobs = 1308, xcoord = reef.det$deploy_long, ycoord = reef.det$deploy_lat)
-new.bank.det <- r.bank(nobs = 18964, xcoord = bank.det$deploy_long, ycoord = bank.det$deploy_lat)
-
-# the above functions return just columns with lat/long, so they need to be merged with the rest of the detection data
-new.reef.det <- cbind(reef.det, new.reef.det)
-new.bank.det <- cbind(bank.det, new.bank.det)
+set.seed(2022)
+new.reef.det <- r.reef(data = reef.det, coords = c('deploy_long','deploy_lat'), land_shp = Study_Area)
+new.bank.det <- r.bank(data = bank.det, coords = c('deploy_long','deploy_lat'), land_shp = Study_Area)
 
 # these sf dataframes currently have the geometry associated with deploy_lat/deploy_long (i.e. receiver locations), but we need to reset the geometry to the newly assigned coordinates
 new.reef.det <- new.reef.det %>%
-  st_drop_geometry() %>%
-  st_as_sf(., coords=c("lon","lat"), crs = 4326)
-new.reef.det$lon<-st_coordinates(new.reef.det)[,1] 
-new.reef.det$lat<-st_coordinates(new.reef.det)[,2] 
-new.reef.det <- st_transform(new.reef.det, 3395) # transform the CRS projected World Mercator, units = m 
+  dplyr::select(-geometry) %>%
+  st_as_sf(., coords=c("lon1","lat1"), crs = 4326, remove = FALSE) %>%
+  st_transform(3395) # transform the CRS projected World Mercator, units = m
 
 new.bank.det <- new.bank.det %>%
-  st_drop_geometry() %>%
-  st_as_sf(., coords=c("lon","lat"), crs = 4326)
-new.bank.det$lon<-st_coordinates(new.bank.det)[,1]
-new.bank.det$lat<-st_coordinates(new.bank.det)[,2]
-new.bank.det <- st_transform(new.bank.det, 3395)
+  dplyr::select(-geometry) %>%
+  st_as_sf(., coords=c("lon1","lat1"), crs = 4326, remove = FALSE) %>%
+  st_transform(3395) # transform the CRS projected World Mercator, units = m
 
-# some of these new scattered detections will inevitably be put on land because of the receivers' proximity to land. Any new locations over land will be reassigned again (from original receiver location). The remaining points still falling over land will be placed back on the receiver location.
+# combine reef and bank data
+new.det.data <- rbind(new.bank.det, new.reef.det) %>%
+  st_drop_geometry()
+write.csv(new.det.data, "new.det.data.csv", row.names = FALSE)
 
-Study_Area <- st_read(dsn = "bimini shapefile/bimini_shape.shp", quiet = TRUE) # shapefile of study area
-Study_Area <- st_transform(Study_Area, 3395) # transform to common CRS
-
-## REEF DATA
-# identify areas over land 
-land.reef <- lengths(st_intersects(new.reef.det, Study_Area)) > 0  
-land.reef.det <- new.reef.det[land.reef,] # 7 points were relocated over land 
-sea.reef.det <- new.reef.det[!land.reef,] # 1301 reef points that were relocated over water and are good to go and move forward with! 
-
-# drop the lat/long on the land.reef.det dataframe and rerun the r.reef function to see if these points are reassigned over land 
-land.reef.det <- land.reef.det %>%
-  dplyr::select(-c(lat, lon)) %>%
-  st_drop_geometry() # drop geometry because it is based off of the lat/long that we are trying to redo 
-
-# rerun function 
-new.reef.det2 <- r.reef(nobs = 7, xcoord = land.reef.det$deploy_long, ycoord = land.reef.det$deploy_lat)
-new.reef.det2 <- cbind(land.reef.det, new.reef.det2) # merge new lat/long with rest of detection data
-new.reef.det2 <- sf::st_as_sf(new.reef.det2, coords=c("lon","lat"), crs = 4326) # assign CRS and transform 
-new.reef.det2$lon<-st_coordinates(new.reef.det2)[,1] 
-new.reef.det2$lat<-st_coordinates(new.reef.det2)[,2]  
-new.reef.det2 <- st_transform(new.reef.det2, 3395)
-
-land.reef2 <- lengths(st_intersects(new.reef.det2, Study_Area)) > 0  # assess if locations are over land 
-land.reef.det2 <- new.reef.det2[land.reef2,] #0 - wonderful - none of the locations were placed over land!! 
-
-# combine above with the points that did not need to be run again/were already placed over land 
-new.reef.det3 <- rbind(sea.reef.det, new.reef.det2)
-
-## BANK DATA 
-# identify areas over land 
-land.bank <- lengths(st_intersects(new.bank.det, Study_Area)) > 0  
-land.bank.det <- new.bank.det[land.bank,] # 2762 points were relocated over land
-sea.bank.det <- new.bank.det[!land.bank,] # 16202 reef points that were relocated over water and are good to go and move forward with! 
-
-# drop the lat/long on the land.reef.det dataframe and rerun the r.bank function to see if these points are reassigned over land 
-land.bank.det <- land.bank.det %>%
-  dplyr::select(-c(lat, lon)) %>%
-  st_drop_geometry() 
-
-# rerun function 
-new.bank.det2 <- r.bank(nobs = 2762, xcoord = land.bank.det$deploy_long, ycoord = land.bank.det$deploy_lat)
-new.bank.det2 <- cbind(land.bank.det, new.bank.det2) # merge new lat/long with rest of detection data
-new.bank.det2 <- sf::st_as_sf(new.bank.det2, coords=c("lon","lat"), crs = 4326)
-new.bank.det2$lon<-st_coordinates(new.bank.det2)[,1] 
-new.bank.det2$lat<-st_coordinates(new.bank.det2)[,2] 
-new.bank.det2 <- st_transform(new.bank.det2, 3395)
-
-land.bank2 <- lengths(st_intersects(new.bank.det2, Study_Area)) > 0 # assess if locations are over land
-land.bank.det2 <- new.bank.det2[land.bank2,] # 420 points relocated over land
-sea.bank.det2 <- new.bank.det2[!land.bank2,]
-
-# now, these points that were placed over land will be replaced with the receiver location 
-land.bank.det2 <- land.bank.det2 %>%
-  dplyr::select(-c(lat, lon)) %>%
-  st_drop_geometry() 
-land.bank.det2$lon <- land.bank.det2$deploy_long # make the long column equal to the deploy_long column
-land.bank.det2$lat <- land.bank.det2$deploy_lat # make the lat column equal to the deploy_lat column
-land.bank.det2 <- sf::st_as_sf(land.bank.det2, coords=c("lon","lat"), crs = 4326) # assign geometry 
-land.bank.det2$lon<-st_coordinates(land.bank.det2)[,1]
-land.bank.det2$lat<-st_coordinates(land.bank.det2)[,2]
-land.bank.det2 <- st_transform(land.bank.det2, 3395)
-
-# combine with the points that did not need to be run again/were already placed over land 
-new.bank.det3 <- rbind(sea.bank.det, sea.bank.det2, land.bank.det2)
-
-# combine reef and bank data 
-new.det.data <- rbind(new.bank.det3, new.reef.det3)
-write.csv(new.det.data, "new.det.data.csv")
-
-# check that it worked
-Study_Area <- st_transform(Study_Area, 4326)
+# visualize reassigned detection locations 
 ggplot(data = Study_Area) +
   geom_sf(fill = "grey", col = "grey") +
-  geom_point(data = new.det.data, aes(lon, lat), color = "red", alpha = 0.5) +
+  geom_point(data = new.det.data, aes(lon1, lat1), color = "red", alpha = 0.5) +
   geom_point(data = filtdet9, aes(deploy_long, deploy_lat), size = 2, color = "black") +
   scale_x_continuous(breaks = c(-79.30, -79.20)) +
   scale_y_continuous(breaks = c(25.70, 25.78)) +
   theme_bw() +
   theme(text = element_text(size = 15)) +
-  theme(axis.text.y = element_text(angle = 90, hjust = 0.5)) + 
-  theme(axis.ticks.y = element_line(size = 0.5)) + 
+  theme(axis.text.y = element_text(angle = 90, hjust = 0.5)) +
+  theme(axis.ticks.y = element_line(size = 0.5)) +
   theme(axis.ticks.x = element_line(size = 0.5)) +
   theme(axis.title.x=element_blank(),
         axis.title.y=element_blank(),
-        panel.grid.major = element_blank(), 
+        panel.grid.major = element_blank(),
         panel.grid.minor = element_blank())
+
+
+# Interactively investigate results (reminder: some receiver stations may have had two or more different actual receivers (and therefore different receiver #s) at different points in time)
+library(bayesmove)
+library(datamods)
+
+new.det.data %>%
+  dplyr::rename(id = receiver_sn, date = detection_timestamp, x = lon1, y = lat1) %>%
+  mutate(date = as_datetime(date)) %>%
+  bayesmove::shiny_tracks(epsg = 4326)
+
+plotly::ggplotly(
+  ggplot(data = Study_Area) +
+    geom_sf(fill = "grey", col = "grey") +
+    geom_point(data = new.det.data, aes(lon1, lat1, color = factor(receiver_sn)), alpha = 0.5) +
+    geom_point(data = filtdet9, aes(deploy_long, deploy_lat), size = 2, color = "black") +
+    scale_x_continuous(breaks = c(-79.30, -79.20)) +
+    scale_y_continuous(breaks = c(25.70, 25.78)) +
+    theme_bw() +
+    theme(text = element_text(size = 15)) +
+    theme(axis.text.y = element_text(angle = 90, hjust = 0.5)) +
+    theme(axis.ticks.y = element_line(size = 0.5)) +
+    theme(axis.ticks.x = element_line(size = 0.5)) +
+    theme(axis.title.x=element_blank(),
+          axis.title.y=element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank()))
 
 
 ## APPLY FUNCTIONS TO THE SUBSET ACOUSTIC DETECTION DATA ##
 
+filtdet9_sub <- as.data.frame(filtdet9_sub) # convert from sf object to dataframe
+
 bank.det_sub <- filtdet9_sub %>%
-  filter(habitat == "bank")
+  filter(habitat == "bank") # create dataframe of detections on sandy bank receivers
 reef.det_sub <- filtdet9_sub %>%
-  filter(habitat == "reef")
+  filter(habitat == "reef") # create dataframe of detections on reef receivers
 
-# run functions
-new.reef.det_sub <- r.reef(nobs = 975, xcoord = reef.det_sub$deploy_long, ycoord = reef.det_sub$deploy_lat)
-new.bank.det_sub <- r.bank(nobs = 15007, xcoord = bank.det_sub$deploy_long, ycoord = bank.det_sub$deploy_lat)
+# run functions created above to reassign detection locations
+set.seed(2022)
+new.reef.det_sub <- r.reef(data = reef.det_sub, coords = c('deploy_long','deploy_lat'), land_shp = Study_Area)
+new.bank.det_sub <- r.bank(data = bank.det_sub, coords = c('deploy_long','deploy_lat'), land_shp = Study_Area)
 
-# merge new lat/long with the rest of the detection data
-new.reef.det_sub <- cbind(reef.det_sub, new.reef.det_sub)
-new.bank.det_sub <- cbind(bank.det_sub, new.bank.det_sub)
+# these sf dataframes currently have the geometry associated with deploy_lat/deploy_long (i.e. receiver locations), but we need to reset the geometry to the newly assigned coordinates
+new.reef.det_sub <- new.reef.det_sub %>%
+  dplyr::select(-geometry) %>%
+  st_as_sf(., coords=c("lon1","lat1"), crs = 4326, remove = FALSE) %>%
+  st_transform(3395) # transform the CRS projected World Mercator, units = m
 
-new.reef.det_sub <- st_drop_geometry(new.reef.det_sub) # drop current geometry
-new.reef.det_sub <- st_as_sf(new.reef.det_sub, coords=c("lon","lat"), crs = 4326)
-new.reef.det_sub$lon<-st_coordinates(new.reef.det_sub)[,1] 
-new.reef.det_sub$lat<-st_coordinates(new.reef.det_sub)[,2] 
-new.reef.det_sub <- st_transform(new.reef.det_sub, 3395)
+new.bank.det_sub <- new.bank.det_sub %>%
+  dplyr::select(-geometry) %>%
+  st_as_sf(., coords=c("lon1","lat1"), crs = 4326, remove = FALSE) %>%
+  st_transform(3395) # transform the CRS projected World Mercator, units = m
 
-new.bank.det_sub <- st_drop_geometry(new.bank.det_sub)
-new.bank.det_sub <- st_as_sf(new.bank.det_sub, coords=c("lon","lat"), crs = 4326) 
-new.bank.det_sub$lon<-st_coordinates(new.bank.det_sub)[,1] 
-new.bank.det_sub$lat<-st_coordinates(new.bank.det_sub)[,2] 
-new.bank.det_sub <- st_transform(new.bank.det_sub, 3395)
+# combine reef and bank data
+new.det.data_sub <- rbind(new.bank.det_sub, new.reef.det_sub) %>%
+  st_drop_geometry()
+write.csv(new.det.data_sub, "new.det.data_sub.csv", row.names = FALSE)
 
-## REEF DATA
-land.reef_sub <- lengths(st_intersects(new.reef.det_sub, Study_Area)) > 0 # identify areas over land 
-land.reef.det_sub <- new.reef.det_sub[land.reef_sub,] # 4 points were relocated over land 
-sea.reef.det_sub <- new.reef.det_sub[!land.reef_sub,] # 971 reef points that were relocated over water and are good to go and move forward with! 
-
-# drop the lat/long on the land.reef.det_sub dataframe and rerun the r.reef function to see if these points can go back over land 
-land.reef.det_sub <- land.reef.det_sub %>%
-  dplyr::select(-c(lat, lon)) %>%
-  st_drop_geometry() 
-new.reef.det2_sub <- r.reef(nobs = 4, xcoord = land.reef.det_sub$deploy_long, ycoord = land.reef.det_sub$deploy_lat)
-new.reef.det2_sub <- cbind(land.reef.det_sub, new.reef.det2_sub) # merge
-new.reef.det2_sub <- sf::st_as_sf(new.reef.det2_sub, coords=c("lon","lat"), crs = 4326)
-new.reef.det2_sub$lon<-st_coordinates(new.reef.det2_sub)[,1] 
-new.reef.det2_sub$lat<-st_coordinates(new.reef.det2_sub)[,2] 
-new.reef.det2_sub <- st_transform(new.reef.det2_sub, 3395)
-
-land.reef2_sub <- lengths(st_intersects(new.reef.det2_sub, Study_Area)) > 0 # identify areas over land
-land.reef.det2_sub <- new.reef.det2_sub[land.reef2_sub,] # 0 points relocated over land
-sea.reef.det2_sub <- new.reef.det2_sub[!land.reef2_sub,]
-
-# combine with the points that did not need to be run again/were already placed over land 
-new.reef.det3_sub <- rbind(sea.reef.det_sub, new.reef.det2_sub)
-
-## BANK DATA
-new.bank.det_sub <- st_drop_geometry(new.bank.det_sub)
-new.bank.det_sub <- sf::st_as_sf(new.bank.det_sub, coords=c("lon","lat"), crs = 4326) 
-new.bank.det_sub$lon<-st_coordinates(new.bank.det_sub)[,1] 
-new.bank.det_sub$lat<-st_coordinates(new.bank.det_sub)[,2]
-new.bank.det_sub <- st_transform(new.bank.det_sub, 3395)
-land.bank_sub <- lengths(st_intersects(new.bank.det_sub, Study_Area)) > 0  # identify areas over land 
-land.bank.det_sub <- new.bank.det_sub[land.bank_sub,] # 2070 points were relocated over land
-sea.bank.det_sub <- new.bank.det_sub[!land.bank_sub,] # 12977 reef points that were relocated over water and are good to go and move forward with! 
-
-# drop the lat/long on the land.reef.det dataframe and rerun the r.bank function to see if these points can go back over land 
-land.bank.det_sub <- land.bank.det_sub %>%
-  dplyr::select(-c(lat, lon)) %>%
-  st_drop_geometry() 
-new.bank.det2_sub <- r.bank(nobs = 2070, xcoord = land.bank.det_sub$deploy_long, ycoord = land.bank.det_sub$deploy_lat)
-new.bank.det2_sub <- cbind(land.bank.det_sub, new.bank.det2_sub)
-
-new.bank.det2_sub <- sf::st_as_sf(new.bank.det2_sub, coords=c("lon","lat"), crs = 4326)
-new.bank.det2_sub$lon<-st_coordinates(new.bank.det2_sub)[,1] 
-new.bank.det2_sub$lat<-st_coordinates(new.bank.det2_sub)[,2] 
-new.bank.det2_sub <- st_transform(new.bank.det2_sub, 3395)
-
-land.bank2_sub <- lengths(st_intersects(new.bank.det2_sub, Study_Area)) > 0 # identify areas over land
-land.bank.det2_sub <- new.bank.det2_sub[land.bank2_sub,] # 389 points relocated over land
-sea.bank.det2_sub <- new.bank.det2_sub[!land.bank2_sub,]
-
-# replace points that were still placed over land with the receiver location 
-land.bank.det2_sub <- land.bank.det2_sub %>%
-  dplyr::select(-c(lat, lon)) %>%
-  st_drop_geometry() 
-land.bank.det2_sub$lon <- land.bank.det2_sub$deploy_long
-land.bank.det2_sub$lat <- land.bank.det2_sub$deploy_lat
-land.bank.det2_sub <- sf::st_as_sf(land.bank.det2_sub, coords=c("lon","lat"), crs = 4326)
-land.bank.det2_sub$lon<-st_coordinates(land.bank.det2_sub)[,1]
-land.bank.det2_sub$lat<-st_coordinates(land.bank.det2_sub)[,2]
-land.bank.det2_sub <- st_transform(land.bank.det2_sub, 3395)
-
-# combine with the points that did not need to be run again/were already placed over land 
-new.bank.det3_sub <- rbind(sea.bank.det_sub, sea.bank.det2_sub, land.bank.det2_sub)
-
-# now combine reef and bank data 
-new.det.data_sub <- rbind(new.bank.det3_sub, new.reef.det3_sub)
-write.csv(new.det.data_sub, "new.det.data_sub.csv")
+# visualize reassigned detection locations 
+ggplot(data = Study_Area) +
+  geom_sf(fill = "grey", col = "grey") +
+  geom_point(data = new.det.data_sub, aes(lon1, lat1), color = "red", alpha = 0.5) +
+  geom_point(data = filtdet9_sub, aes(deploy_long, deploy_lat), size = 2, color = "black") +
+  scale_x_continuous(breaks = c(-79.30, -79.20)) +
+  scale_y_continuous(breaks = c(25.70, 25.78)) +
+  theme_bw() +
+  theme(text = element_text(size = 15)) +
+  theme(axis.text.y = element_text(angle = 90, hjust = 0.5)) +
+  theme(axis.ticks.y = element_line(size = 0.5)) +
+  theme(axis.ticks.x = element_line(size = 0.5)) +
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
 
 
 #Next Script: Calculate COAs
