@@ -1,4 +1,4 @@
-#### CONTINUOUS TIME SSM ####
+#### CONTINUOUS TIME SSM_ODS####
 # Previous Script: Satellite Filtering 
 
 # A continuous-time state-space model will be fit to the satellite telemetry data to filter the Argos geolocation data and improve location estimates. The {foieGras} package will be used for this, and since we are not interested in estimating behavioral states, but rather just correcting location estimates based on the provided errors, we will use the "fitted" locations returned by {foieGras}. The time step will be set to NA so that only locations at the time of transmissions will be estimated (i.e. locations will not be interpolated at regular time steps).
@@ -7,7 +7,7 @@ library(dplyr)
 library(lubridate)
 library(sf)
 library(tidyverse)
-library(foieGras)
+library(foieGras) #**NOTE: package name has changed to aniMotum, however foieGras still functions
 
 
 ## PREPARE DATA ##
@@ -89,5 +89,5 @@ fG_sub_noland$Location.Err <- pmin(fG_sub_noland$x.se, fG_sub_noland$y.se)
 write.csv(fG_sub_noland, "fG_sub_noland.csv")
 
 
-# Next Script: Individual dBBMMs
+# Next Script: Individual dBBMMs_ODs
 
