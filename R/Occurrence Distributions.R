@@ -1,15 +1,15 @@
-#### Occurrene Distributions ####
+#### Occurrence Distributions ####
 # Previous Script: Individual dBBMMs_ODs
 
 # Here we will extract the 95% and 50% contours for the occurrence distributions. We will calculate their areas and map them
 # Overall Steps:
-  # 1. Import the dBBMM objects for the individual (most turtles have 3)
-  # 2. use raster2contour to convert from dBBMM to spatial lines 
-  # 3. convert to sf linestring object
-  # 4. cast to a polygon or multipolygon depending on the turtle
-  # 5. delete overlap with land
-  # 6. Plot with ggplot
-  # 7. Individual maps are combined with outside software for publication; the first map for Turtle A includes a legend used for all maps (not included in code for other maps)
+# 1. Import the dBBMM objects for the individual
+# 2. use raster2contour to convert from dBBMM to spatial lines 
+# 3. convert to sf linestring object
+# 4. cast to a polygon or multipolygon depending on the turtle
+# 5. delete overlap with land
+# 6. Plot with ggplot
+# 7. Individual maps are combined with outside software for publication; the first map for Turtle A includes a legend used for all maps (not included in code for other maps)
 
 library(dplyr)
 library(ggplot2)
@@ -86,7 +86,7 @@ UD.Ass.50 <- st_cast(UD.Ass.50, "POLYGON")
 UD.Ass.50 <- st_make_valid(UD.Ass.50)
 UD.Ass.50 <- st_difference(UD.Ass.50, land)
 plot(UD.Ass.50)
-st_area(UD.Ass.50)
+st_area(UD.Ass.50) 
 
 load(file = "Aas")
 # Acoustic Subset 95% 
@@ -95,7 +95,7 @@ UD.Aas.95 <- st_as_sf(UD.Aas.95, coords = c("long", "lat"), crs = 3395)
 UD.Aas.95 <- st_cast(UD.Aas.95, "POLYGON") 
 UD.Aas.95 <- st_make_valid(UD.Aas.95)
 UD.Aas.95 <- st_difference(UD.Aas.95, land)
-st_area(UD.Aas.95) 
+st_area(UD.Aas.95)
 # Acoustic Subset 50% 
 UD.Aas.50 <- raster2contour(dBB.Aas, levels = 0.50) 
 UD.Aas.50 <- st_as_sf(UD.Aas.50, coords = c("long", "lat"), crs = 3395)
@@ -180,7 +180,6 @@ ggplot() +
   annotate("text", x = -8833201.59, y = 2955739.88, label = "Turtle A", size = 6.5, hjust = 0, vjust = 1)
 ggsave(filename = "A_equal.tiff", plot = A_equal, device = "tiff",path = "/Users/EmilyHardin/Desktop/Research/Acous.vs.Sat", width = 120, height = 120, units = c("mm"), dpi = 600)
 
-
 ## TURTLE B ## 
 
 load(file = "Bs")
@@ -231,14 +230,14 @@ UD.Ca.95 <- st_as_sf(UD.Ca.95, coords = c("long", "lat"), crs = 3395)
 UD.Ca.95 <- st_cast(UD.Ca.95, "POLYGON") 
 UD.Ca.95 <- st_make_valid(UD.Ca.95)
 UD.Ca.95 <- st_difference(UD.Ca.95, land)
-st_area(UD.Ca.95)
+st_area(UD.Ca.95) 
 # Acoustic 50% 
 UD.Ca.50 <- raster2contour(dBB.Ca, levels = 0.50) 
 UD.Ca.50 <- st_as_sf(UD.Ca.50, coords = c("long", "lat"), crs = 3395)
 UD.Ca.50 <- st_cast(UD.Ca.50, "POLYGON") 
 UD.Ca.50 <- st_make_valid(UD.Ca.50)
 UD.Ca.50 <- st_difference(UD.Ca.50, land)
-st_area(UD.Ca.50)
+st_area(UD.Ca.50) 
 
 load(file = "Cs")
 # Satellite 95% 
@@ -254,7 +253,7 @@ UD.Cs.50 <- st_as_sf(UD.Cs.50, coords = c("long", "lat"), crs = 3395)
 UD.Cs.50 <- st_cast(UD.Cs.50, "POLYGON") 
 UD.Cs.50 <- st_make_valid(UD.Cs.50)
 UD.Cs.50 <- st_difference(UD.Cs.50, land)
-st_area(UD.Cs.50) #
+st_area(UD.Cs.50) 
 
 load(file = "Css")
 # Satellite Subset 95% 
@@ -263,14 +262,14 @@ UD.Css.95 <- st_as_sf(UD.Css.95, coords = c("long", "lat"), crs = 3395)
 UD.Css.95 <- st_cast(UD.Css.95, "POLYGON") 
 UD.Css.95 <- st_make_valid(UD.Css.95)
 UD.Css.95 <- st_difference(UD.Css.95, land)
-st_area(UD.Css.95) # 
+st_area(UD.Css.95) 
 # Satellite Subset 50% 
 UD.Css.50 <- raster2contour(dBB.Css, levels = 0.50) 
 UD.Css.50 <- st_as_sf(UD.Css.50, coords = c("long", "lat"), crs = 3395)
 UD.Css.50 <- st_cast(UD.Css.50, "POLYGON") 
 UD.Css.50 <- st_make_valid(UD.Css.50)
 UD.Css.50 <- st_difference(UD.Css.50, land)
-st_area(UD.Css.50) # 
+st_area(UD.Css.50) 
 
 load(file = "Cas")
 # Acoustic Subset 95% 
@@ -279,14 +278,14 @@ UD.Cas.95 <- st_as_sf(UD.Cas.95, coords = c("long", "lat"), crs = 3395)
 UD.Cas.95 <- st_cast(UD.Cas.95, "POLYGON") 
 UD.Cas.95 <- st_make_valid(UD.Cas.95)
 UD.Cas.95 <- st_difference(UD.Cas.95, land)
-st_area(UD.Cas.95) # 
+st_area(UD.Cas.95) 
 # Acoustic Subset 50% 
 UD.Cas.50 <- raster2contour(dBB.Cas, levels = 0.50) 
 UD.Cas.50 <- st_as_sf(UD.Cas.50, coords = c("long", "lat"), crs = 3395)
 UD.Cas.50 <- st_cast(UD.Cas.50, "POLYGON") 
 UD.Cas.50 <- st_make_valid(UD.Cas.50)
 UD.Cas.50 <- st_difference(UD.Cas.50, land)
-st_area(UD.Cas.50) # 
+st_area(UD.Cas.50) 
 
 # Matching Temporal Duration UD plot
 C_equal<- ggplot() +
@@ -334,7 +333,7 @@ C_full <- ggplot() +
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank()) + 
   annotate("text", x = -8833201.59, y = 2955739.88, label = "Turtle C", size = 6.5, hjust = 0, vjust = 1)
-ggsave(filename = "C_full.tiff", plot = C_full, device = "tiff",path = "/Users/EmilyHardin/Desktop/Research/Acous.vs.Sata", width = 120, height = 120, units = c("mm"), dpi = 600)
+ggsave(filename = "C_full.tiff", plot = C_full, device = "tiff",path = "/Users/EmilyHardin/Desktop/Research/Acous.vs.Sat", width = 120, height = 120, units = c("mm"), dpi = 600)
 
 
 ## TURTLE D ## 
@@ -346,7 +345,7 @@ UD.Da.95 <- st_as_sf(UD.Da.95, coords = c("long", "lat"), crs = 3395)
 UD.Da.95 <- st_cast(UD.Da.95, "POLYGON") 
 UD.Da.95 <- st_make_valid(UD.Da.95)
 UD.Da.95 <- st_difference(UD.Da.95, land)
-st_area(UD.Da.95) 
+st_area(UD.Da.95)  
 # Acoustic 50% 
 UD.Da.50 <- raster2contour(dBB.Da, levels = 0.50) 
 UD.Da.50 <- st_as_sf(UD.Da.50, coords = c("long", "lat"), crs = 3395)
@@ -703,7 +702,7 @@ UD.Hss.50 <- st_as_sf(UD.Hss.50, coords = c("long", "lat"), crs = 3395)
 UD.Hss.50 <- st_cast(UD.Hss.50, "POLYGON") 
 UD.Hss.50 <- st_make_valid(UD.Hss.50)
 UD.Hss.50 <- st_difference(UD.Hss.50, land)
-st_area(UD.Hss.50) # 
+st_area(UD.Hss.50) 
 
 # Matching Temporal Duration UD plot
 H_equal <- ggplot() +
@@ -725,7 +724,7 @@ H_equal <- ggplot() +
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank()) + 
   annotate("text", x = -8833201.59, y = 2955739.88, label = "Turtle H", size = 6.5, hjust = 0, vjust = 1)
-ggsave(filename = "H_equal2.tiff", plot = H_equal2, device = "tiff",path = "/Users/EmilyHardin/Desktop/Research/Acous.vs.Sat", width = 120, height = 120, units = c("mm"), dpi = 600)
+ggsave(filename = "H_equal.tiff", plot = H_equal, device = "tiff",path = "/Users/EmilyHardin/Desktop/Research/Acous.vs.Sat", width = 120, height = 120, units = c("mm"), dpi = 600)
 
 # Full Temporal Duration UD plot
 H_full <- ggplot() +
@@ -747,7 +746,7 @@ H_full <- ggplot() +
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank()) + 
   annotate("text", x = -8833201.59, y = 2955739.88, label = "Turtle H", size = 6.5, hjust = 0, vjust = 1)
-ggsave(filename = "H_full2.tiff", plot = H_full2, device = "tiff",path = "/Users/EmilyHardin/Desktop/Research/Acous.vs.Sat", width = 120, height = 120, units = c("mm"), dpi = 600)
+ggsave(filename = "H_full.tiff", plot = H_full, device = "tiff",path = "/Users/EmilyHardin/Desktop/Research/Acous.vs.Sat", width = 120, height = 120, units = c("mm"), dpi = 600)
 
 
 ## TURTLE I ## 
@@ -766,7 +765,7 @@ UD.Ia.50 <- st_as_sf(UD.Ia.50, coords = c("long", "lat"), crs = 3395)
 UD.Ia.50 <- st_cast(UD.Ia.50, "POLYGON") 
 UD.Ia.50 <- st_make_valid(UD.Ia.50)
 UD.Ia.50 <- st_difference(UD.Ia.50, land)
-st_area(UD.Ia.50) 
+st_area(UD.Ia.50)
 
 load(file = "Is")
 # Satellite 95% 
@@ -775,7 +774,7 @@ UD.Is.95 <- st_as_sf(UD.Is.95, coords = c("long", "lat"), crs = 3395)
 UD.Is.95 <- st_cast(UD.Is.95, "POLYGON") 
 UD.Is.95 <- st_make_valid(UD.Is.95)
 UD.Is.95 <- st_difference(UD.Is.95, land)
-st_area(UD.Is.95) 
+st_area(UD.Is.95)  
 # Satellite 50% 
 UD.Is.50 <- raster2contour(dBB.Is, levels = 0.50) 
 UD.Is.50 <- st_as_sf(UD.Is.50, coords = c("long", "lat"), crs = 3395)

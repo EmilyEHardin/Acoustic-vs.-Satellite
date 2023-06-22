@@ -1,8 +1,8 @@
 #### OD COMPARISONS ####
 # Previous Script: Occurrence Distributions 
 
-# The areas of all UDs were compiled into a table (UD.Comp.csv)and converted into km2. Here we will run comparisons and Welch's t-tests to compares the differences in size
-# The areas of the UDs estimated from the matching and full temporal durations were also compiled into a table () and will be compared here
+# The areas of all ODs were compiled into a table (UD.Comp.csv) and converted into km2. Here we will run comparisons and Welch's t-tests/Bayesian t-tests to compare the differences in size
+# The areas of the ODs estimated from the matching and full temporal durations were also compiled into a table and will be compared here
 
 library(dplyr)
 library(tidyverse)
@@ -55,7 +55,7 @@ boxplot(UD.Comp$Full_Ac_95, UD.Comp$Full_Ac_50, UD.Comp$Full_Sat_95, UD.Comp$Ful
 # Only Turtles A, C, D, G, and I have both Acoustic and Satellite UDs and therefore only these individuals can be used in comparisons of tracking types 
 # Create a new dataframe containing only these individuals 
 UD.Comp.5 <- UD.Comp %>%
-  filter(X == "A" | X == "C" | X == "D" | X == "G" | X == "I")
+  filter(ID == "A" | ID == "C" | ID == "D" | ID == "G" | ID == "I")
 
 # Acoustic Equal Temporal Scale 
 mean(UD.Comp.5$Equal_Ac_95)
@@ -196,20 +196,20 @@ plot(BEST.full.50.BB)
 ## CALCULATING HOW MUCH LARGER SATELLITE UDs ARE THAN ACOUSTIC UDs ## 
 
 # Equal Temporal Duration 95% 
-UD.Comp$Equal_Inc_95 <- UD.Comp$Equal_Sat_95/UD.Comp$Equal_Ac_95
-mean(UD.Comp$Equal_Inc_95, na.rm = T) # on average 12 x larger than acoustic 
+UD.Comp.5$Equal_Inc_95 <- UD.Comp.5$Equal_Sat_95/UD.Comp.5$Equal_Ac_95
+mean(UD.Comp.5$Equal_Inc_95, na.rm = T) # on average 12x larger than acoustic 
 
 # Equal Temporal Duration 50% 
-UD.Comp$Equal_Inc_50 <- UD.Comp$Equal_Sat_50/UD.Comp$Equal_Ac_50
-mean(UD.Comp$Equal_Inc_50, na.rm = T) # on average 15 x larger than acoustic
+UD.Comp.5$Equal_Inc_50 <- UD.Comp.5$Equal_Sat_50/UD.Comp.5$Equal_Ac_50
+mean(UD.Comp.5$Equal_Inc_50, na.rm = T) # on average 15x larger than acoustic
 
 # Full Temporal Duration 95% 
-UD.Comp$Full_Inc_95 <- UD.Comp$Full_Sat_95/UD.Comp$Full_Ac_95
-mean(UD.Comp$Full_Inc_95, na.rm = T) # on average 11.5 x larger than acoustic 
+UD.Comp.5$Full_Inc_95 <- UD.Comp.5$Full_Sat_95/UD.Comp.5$Full_Ac_95
+mean(UD.Comp.5$Full_Inc_95, na.rm = T) # on average 11.5x larger than acoustic 
 
 # Full Temporal Duration 50%
-UD.Comp$Full_Inc_50 <- UD.Comp$Full_Sat_50/UD.Comp$Full_Ac_50
-mean(UD.Comp$Full_Inc_50, na.rm = T) # on average 10 x larger than acoustic
+UD.Comp.5$Full_Inc_50 <- UD.Comp.5$Full_Sat_50/UD.Comp.5$Full_Ac_50
+mean(UD.Comp.5$Full_Inc_50, na.rm = T) # on average 10x larger than acoustic
 
 
 ## ASSESSING EFFECT OF FULL TEMPORAL DURATION VS. EQUAL TEMPORAL DURATION ##

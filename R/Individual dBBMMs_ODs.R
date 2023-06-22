@@ -50,10 +50,10 @@ COAall_sub_loc <- COAall_sub_loc %>%
   dplyr::select(Tag.ID, timestamp, Latitude.coa, Longitude.coa, Location.Err)
 
 # Check and remove turtles that don't have enough relocations 
-  # For satellite data, the window will be set to 13, so need over 13 relocations 
-    # average time step for satellite data is ~2 hrs, so 13 locations = ~24 hours
-  # For acoustic data, the window will be set to 49, so need over 49 relocations 
-    # time step for acoustic COAs is 30 minutes, so 49 locations = ~24 hours
+# For satellite data, the window will be set to 13, so need over 13 relocations 
+# average time step for satellite data is ~2 hrs, so 13 locations = ~24 hours
+# For acoustic data, the window will be set to 49, so need over 49 relocations 
+# time step for acoustic COAs is 30 minutes, so 49 locations = ~24 hours
 checkS <- sat %>%
   group_by(id) %>%
   summarise(relocations = length(timestamp))
@@ -170,7 +170,7 @@ raster.A <- raster(
   xmn = -8855676, 
   xmx = -8794026, 
   ymn = 2917158, 
-  ymx = 2967797, 
+  ymx = 2977624, 
   crs = CRS("+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"),
   resolution = 50)
 
@@ -554,7 +554,6 @@ save(x=dBB.Gs, file="Gs")
 save(x=dBB.Gss, file="Gss")
 
 # TURTLE H - not enough COAs to run dBBMM on acoustic data
-
 extent(Hs)
 extent(Hss)
 raster.H <- raster(
@@ -655,6 +654,4 @@ save(x=dBB.Is, file="Is")
 save(x=dBB.Iss, file="Iss")
 
 
-# Next Script: Occurrence Distributions 
-
-
+# Next Script: Occurrence Distributions
